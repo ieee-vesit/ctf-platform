@@ -19,7 +19,7 @@ const ParticipantDashboard = () => {
     <div className="min-h-screen bg-black text-white px-8 py-6 relative overflow-hidden">
       {/* HEADER */}
       <div className="relative z-10 mb-6">
-        <h1 className="text-4xl font-bold italic tracking-wide">
+        <h1 className="text-4xl font-bold italic text-amber-300  tracking-wide">
           PARTICIPANT <span className="text-white">DASHBOARD</span>
         </h1>
       </div>

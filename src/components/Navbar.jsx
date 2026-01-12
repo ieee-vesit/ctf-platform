@@ -16,9 +16,9 @@ const Navbar = () => {
   return (
     <header className="w-full h-16 bg-black border-b border-yellow-500/30 flex items-center px-6">
       {/* LEFT - LOGO */}
-      <div className="flex items-center gap-2 text-yellow-400 font-bold text-lg">
+      <div className="flex items-center gap-2 text-yellow-400 font-bold text-2xl">
         {/* <span className="text-xl">🛡</span> */}
-        <span className="tracking-wide">ROOT{"{CTF}"}</span>
+        <span className="tracking-wide">IEEE_{"CTF"}</span>
       </div>
 
       {/* CENTER - NAV LINKS */}
@@ -34,6 +34,18 @@ const Navbar = () => {
           icon={<LayoutDashboard size={18} />}
           label="Dashboard"
           active={path === "/dashboard"}
+        />
+        <NavItem
+          path="/leaderboard"
+          icon={<LayoutDashboard size={18} />}
+          label="leaderboard"
+          active={path === "/leaderboard"}
+        />
+        <NavItem
+          path="/logs"
+          icon={<LayoutDashboard size={18} />}
+          label="Logs"
+          active={path === "/logs"}
         />
       </nav>
 
