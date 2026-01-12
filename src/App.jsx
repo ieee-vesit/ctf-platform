@@ -3,7 +3,7 @@ import { Route, Routes } from "react-router-dom";
 import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import ParticipantDashboard from "./pages/ParticipantDashboard";
-
+import AuthPage from "./pages/AuthPage";
 
 function App() {
   const [count, setCount] = useState(0);
@@ -13,6 +13,7 @@ function App() {
       <Routes>
         <Route path="/" element={<Layout />}>
           <Route index element={<Home />} />
+          <Route path="auth" element={<AuthPage />} />
           <Route path="dashboard" element={<ParticipantDashboard />} />
         </Route>
       </Routes>

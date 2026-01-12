@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
-*{
-  background-color: black;
+@layer base {
+  body {
+    @apply bg-slate-950 text-white;
+  }
 }
