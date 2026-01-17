@@ -52,7 +52,6 @@ const AuthPage = () => {
   const [showPassword, setShowPassword] = useState(false);
 
   const [formData, setFormData] = useState({
-    username: "",
     teamName: "",
     email: "",
     password: "",
@@ -93,17 +92,19 @@ const AuthPage = () => {
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
-            <input
-              type="text"
-              name="username"
-              placeholder="Username"
-              value={formData.username}
-              onChange={handleChange}
-              className="w-full bg-zinc-900 border border-zinc-800 text-gray-100 px-4 py-3 rounded-lg focus:border-yellow-400/50 focus:ring-2 focus:ring-yellow-400/20 outline-none"
-              required
-            />
-
-            {!isLogin && (
+            {isLogin ? (
+              <>
+                <input
+                  type="email"
+                  name="email"
+                  placeholder="Email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  className="w-full bg-zinc-900 border border-zinc-800 text-gray-100 px-4 py-3 rounded-lg focus:border-yellow-400/50 focus:ring-2 focus:ring-yellow-400/20 outline-none"
+                  required
+                />
+              </>
+            ) : (
               <>
                 <input
                   type="text"

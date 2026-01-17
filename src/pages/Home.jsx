@@ -1,6 +1,8 @@
 import AuthPage from "./AuthPage";
+import { supabase } from "../supabaseClient";
 
 const Home = () => {
+  console.log(supabase)
   return (
     <div className="min-h-screen bg-black flex flex-col items-center px-4">
       {/* Heading
