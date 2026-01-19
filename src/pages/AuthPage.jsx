@@ -89,26 +89,114 @@ const AuthPage = () => {
     setLoading(true);
 
     try {
-      if (isLogin) {
+      if (!isLogin) {
+        // ========== SIGN UP ==========
+        
+        // Validate team name
+        if (!formData.teamName.trim()) {
+          alert("Please enter a team name");
+          setLoading(false);
+          return;
+        }
+
+        if (formData.teamName.length < 3) {
+          alert("Team name must be at least 3 characters");
+          setLoading(false);
+          return;
+        }
+
+        console.log("📝 Starting signup process...");
+
+        // 1️⃣ Create auth user
+        const { data: authData, error: signUpError } = await supabase.auth.signUp({
+          email: formData.email,
+          password: formData.password,
+        });
+
+        if (signUpError) throw signUpError;
+
+        if (!authData?.user) {
+          throw new Error("Signup failed - no user created");
+        }
+
+        console.log("✅ Auth user created:", authData.user.id);
+
+        // 2️⃣ DIRECTLY INSERT into users table (bypass trigger issues)
+        // This uses INSERT with ON CONFLICT to handle both cases:
+        // - If trigger worked: Do nothing
+        // - If trigger failed: Insert the row
+        
+        const { error: insertError } = await supabase
+          .from("users")
+          .insert({
+            id: authData.user.id,
+            email: authData.user.email,
+            team_name: formData.teamName.trim(),
+            is_admin: false
+          })
+          .select()
+          .single();
+
+        // If insert fails with duplicate key, that means trigger worked
+        // So we update instead
+        if (insertError) {
+          if (insertError.code === '23505') {
+            // Duplicate key - trigger already created the row, so UPDATE
+            console.log("ℹ️ Trigger created row, updating team_name...");
+            
+            const { error: updateError } = await supabase
+              .from("users")
+              .update({ team_name: formData.teamName.trim() })
+              .eq("id", authData.user.id);
+
+            if (updateError) {
+              console.error("❌ Update error:", updateError);
+              throw new Error("Failed to save team name");
+            }
+          } else {
+            // Some other error
+            console.error("❌ Insert error:", insertError);
+            throw insertError;
+          }
+        }
+
+        console.log("✅ User profile created with team name");
+
+        // 3️⃣ Verify it worked
+        const { data: verifyData, error: verifyError } = await supabase
+          .from("users")
+          .select("team_name, is_admin")
+          .eq("id", authData.user.id)
+          .single();
+
+        if (verifyError) {
+          console.error("❌ Verification failed:", verifyError);
+          throw new Error("Could not verify account. Please try logging in.");
+        }
+
+        console.log("✅ Verification successful:", verifyData);
+
+        // Success!
+        alert("Account created successfully! Welcome to IEEE CTF!");
+        navigate("/dashboard");
+
+      } else {
+        // ========== LOGIN ==========
+        console.log("🔐 Logging in...");
+        
         const { error } = await supabase.auth.signInWithPassword({
           email: formData.email,
           password: formData.password,
         });
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.auth.signUp({
-          email: formData.email,
-          password: formData.password,
-          options: {
-            data: { team_name: formData.teamName },
-          },
-        });
-        if (error) throw error;
-      }
 
-      navigate("/dashboard");
+        if (error) throw error;
+
+        console.log("✅ Login successful");
+        navigate("/dashboard");
+      }
     } catch (err) {
-      alert(err.message);
+      console.error("💥 Auth Error:", err);
+      alert(err.message || "An error occurred");
     } finally {
       setLoading(false);
     }
@@ -280,7 +368,7 @@ const AuthPage = () => {
                       d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                     />
                   </svg>
-                  Processing...
+                  {!isLogin ? "Creating account..." : "Signing in..."}
                 </span>
               ) : isLogin ? (
                 "Sign In"
@@ -306,12 +394,14 @@ const AuthPage = () => {
           <div className="text-center">
             <button
               onClick={() => setIsLogin(!isLogin)}
+              disabled={loading}
               className="
                 group
                 text-sm text-gray-400
                 hover:text-yellow-400
                 transition-colors duration-200
                 font-medium
+                disabled:opacity-50 disabled:cursor-not-allowed
               "
             >
               {isLogin
@@ -321,11 +411,6 @@ const AuthPage = () => {
             </button>
           </div>
         </div>
-
-        {/* Footer tagline */}
-        <p className="text-center text-gray-600 text-xs mt-6 font-medium">
-          Secure authentication powered by Supabase
-        </p>
       </div>
 
       <style jsx>{`
