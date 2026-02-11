@@ -128,28 +128,52 @@ const ParticipantDashboard = () => {
       </div>
 
       {/* AVAILABLE TASKS */}
-      <div className="relative z-10 mb-4 flex items-center gap-2 text-yellow-400 font-semibold">
+      <div className="relative z-10 mb-6 flex items-center gap-2 text-yellow-400 font-semibold">
         <Shield size={18} />
         AVAILABLE TASKS
       </div>
 
-      {/* CHALLENGE CARDS */}
-      <div className="relative z-10 grid grid-cols-1 md:grid-cols-3 gap-8">
+      {/* CHALLENGE CARDS GROUPED BY CATEGORY */}
+      <div className="relative z-10 space-y-10">
         {challenges.length === 0 ? (
-          <div className="col-span-3 text-center text-gray-400 py-10">
+          <div className="text-center text-gray-400 py-10">
             No challenges available yet.
           </div>
         ) : (
-          challenges.map((challenge) => (
-            <ChallengeCard
-              key={challenge.id}
-              category={challenge.category}
-              points={challenge.points}
-              title={challenge.title}
-              description={challenge.description}
-              onClick={() => handleOpenModal(challenge)}
-            />
-          ))
+          (() => {
+            // Group challenges by category
+            const groupedChallenges = challenges.reduce((acc, challenge) => {
+              const category = challenge.category || "Uncategorized";
+              if (!acc[category]) {
+                acc[category] = [];
+              }
+              acc[category].push(challenge);
+              return acc;
+            }, {});
+
+            return Object.entries(groupedChallenges).map(([category, categoryTasks]) => (
+              <div key={category}>
+                {/* Category Header */}
+                <h2 className="text-2xl font-bold text-amber-300 mb-4 uppercase tracking-wide">
+                  {category}
+                </h2>
+                
+                {/* Challenge Cards for this Category */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                  {categoryTasks.map((challenge) => (
+                    <ChallengeCard
+                      key={challenge.id}
+                      category={challenge.category}
+                      points={challenge.points}
+                      title={challenge.title}
+                      description={challenge.description}
+                      onClick={() => handleOpenModal(challenge)}
+                    />
+                  ))}
+                </div>
+              </div>
+            ));
+          })()
         )}
       </div>
 

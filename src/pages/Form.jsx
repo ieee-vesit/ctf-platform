@@ -1,8 +1,9 @@
 import { useState, useMemo, useEffect } from "react";
 import { supabase } from "../supabaseClient";
+import { X, Edit2 } from "lucide-react";
 
 const ITEMS_PER_PAGE = 6;
-const CATEGORIES = ["ALL", "CRYPTOGRAPHY", "WEB", "FORENSICS", "REVERSE", "PWN", "MISC"];
+const CATEGORIES = ["ALL", "CRYPTOGRAPHY", "STEGANOGRAPHY", "FORENSICS", "WEB EXPLOITATION", "NETWORK ANALYSIS", "OSINT"];
 
 const Form = () => {
     const [formData, setFormData] = useState({
@@ -20,6 +21,18 @@ const Form = () => {
     const [categoryFilter, setCategoryFilter] = useState("ALL");
     const [currentPage, setCurrentPage] = useState(1);
     const [message, setMessage] = useState({ type: "", text: "" });
+
+    const [editModalOpen, setEditModalOpen] = useState(false);
+    const [editingChallenge, setEditingChallenge] = useState(null);
+    const [editFormData, setEditFormData] = useState({
+        title: "",
+        category: "",
+        points: "",
+        description: "",
+        resource_link: "",
+        flag: "",
+    });
+    const [isUpdating, setIsUpdating] = useState(false);
 
     useEffect(() => {
         fetchChallenges();
@@ -128,6 +141,70 @@ const Form = () => {
         }
     };
 
+    const handleOpenEditModal = (challenge) => {
+        setEditingChallenge(challenge);
+        setEditFormData({
+            title: challenge.title,
+            category: challenge.category,
+            points: challenge.points.toString(),
+            description: challenge.description,
+            resource_link: challenge.resource_link || "",
+            flag: challenge.flag,
+        });
+        setEditModalOpen(true);
+    };
+
+    const handleCloseEditModal = () => {
+        setEditModalOpen(false);
+        setEditingChallenge(null);
+        setEditFormData({
+            title: "",
+            category: "",
+            points: "",
+            description: "",
+            resource_link: "",
+            flag: "",
+        });
+    };
+
+    const handleEditInputChange = (e) => {
+        const { name, value } = e.target;
+        setEditFormData((prev) => ({ ...prev, [name]: value }));
+    };
+
+    const handleUpdateChallenge = async (e) => {
+        e.preventDefault();
+        setIsUpdating(true);
+
+        try {
+            const { data, error } = await supabase
+                .from("challenges")
+                .update({
+                    title: editFormData.title,
+                    category: editFormData.category,
+                    points: parseInt(editFormData.points) || 0,
+                    description: editFormData.description,
+                    resource_link: editFormData.resource_link || null,
+                    flag: editFormData.flag,
+                })
+                .eq("id", editingChallenge.id)
+                .select();
+
+            if (error) throw error;
+
+            setChallenges((prev) =>
+                prev.map((c) => (c.id === editingChallenge.id ? data[0] : c))
+            );
+
+            setMessage({ type: "success", text: "Challenge updated successfully!" });
+            handleCloseEditModal();
+        } catch (error) {
+            setMessage({ type: "error", text: "Failed to update challenge" });
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
     if (loading) {
         return (
             <div className="min-h-screen bg-black flex items-center justify-center">
@@ -183,11 +260,11 @@ const Form = () => {
                                 >
                                     <option value="">Select Category</option>
                                     <option value="CRYPTOGRAPHY">CRYPTOGRAPHY</option>
-                                    <option value="WEB">WEB</option>
+                                    <option value="STEGANOGRAPHY">STEGANOGRAPHY</option>
                                     <option value="FORENSICS">FORENSICS</option>
-                                    <option value="REVERSE">REVERSE ENGINEERING</option>
-                                    <option value="PWN">PWN</option>
-                                    <option value="MISC">MISC</option>
+                                    <option value="WEB EXPLOITATION">WEB EXPLOITATION</option>
+                                    <option value="NETWORK ANALYSIS">NETWORK ANALYSIS</option>
+                                    <option value="OSINT">OSINT</option>
                                 </select>
                             </div>
                             <div>
@@ -355,17 +432,26 @@ const Form = () => {
                                             </div>
                                         )}
 
-                                        <div className="flex items-center justify-between pt-3 border-t border-gray-800">
+                                        <div className="flex items-center justify-between pt-3 border-t border-gray-800 gap-2">
                                             <div className="flex items-center gap-2 text-xs text-gray-600">
                                                 <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
                                                 <span>Active</span>
                                             </div>
-                                            <button
-                                                onClick={() => handleDelete(challenge.id)}
-                                                className="px-2 py-1 text-xs text-red-400 hover:text-white hover:bg-red-500/20 border border-transparent hover:border-red-500/50 rounded-lg transition-all duration-200"
-                                            >
-                                                🗑️
-                                            </button>
+                                            <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => handleOpenEditModal(challenge)}
+                                                    className="px-2 py-1 text-xs text-blue-400 hover:text-white hover:bg-blue-500/20 border border-transparent hover:border-blue-500/50 rounded-lg transition-all duration-200 flex items-center gap-1"
+                                                >
+                                                    <Edit2 size={12} />
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDelete(challenge.id)}
+                                                    className="px-2 py-1 text-xs text-red-400 hover:text-white hover:bg-red-500/20 border border-transparent hover:border-red-500/50 rounded-lg transition-all duration-200"
+                                                >
+                                                    🗑️
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 ))}
@@ -414,6 +500,144 @@ const Form = () => {
                     )}
                 </div>
             </div>
+
+            {editModalOpen && (
+                <div
+                    className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4"
+                    onClick={handleCloseEditModal}
+                >
+                    <div
+                        className="relative w-full max-w-3xl max-h-[90vh] bg-gradient-to-b from-gray-900 to-black border-2 border-yellow-400 rounded-2xl p-6 shadow-2xl overflow-y-auto"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex justify-between items-start mb-6">
+                            <h2 className="text-2xl font-bold text-yellow-400">
+                                ✏️ Edit Challenge
+                            </h2>
+                            <button
+                                onClick={handleCloseEditModal}
+                                className="text-gray-400 hover:text-yellow-400 transition-colors"
+                            >
+                                <X size={24} />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleUpdateChallenge} className="space-y-5">
+                            <div>
+                                <label className="block text-sm text-gray-400 mb-2">
+                                    Challenge Title *
+                                </label>
+                                <input
+                                    type="text"
+                                    name="title"
+                                    value={editFormData.title}
+                                    onChange={handleEditInputChange}
+                                    required
+                                    className="w-full px-4 py-3 bg-black border-2 border-gray-700 rounded-lg text-white font-mono focus:outline-none focus:border-yellow-500 transition-colors"
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm text-gray-400 mb-2">
+                                        Category *
+                                    </label>
+                                    <select
+                                        name="category"
+                                        value={editFormData.category}
+                                        onChange={handleEditInputChange}
+                                        required
+                                        className="w-full px-4 py-3 bg-black border-2 border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-500 transition-colors"
+                                    >
+                                        <option value="CRYPTOGRAPHY">CRYPTOGRAPHY</option>
+                                        <option value="STEGANOGRAPHY">STEGANOGRAPHY</option>
+                                        <option value="FORENSICS">FORENSICS</option>
+                                        <option value="WEB EXPLOITATION">WEB EXPLOITATION</option>
+                                        <option value="NETWORK ANALYSIS">NETWORK ANALYSIS</option>
+                                        <option value="OSINT">OSINT</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-sm text-gray-400 mb-2">
+                                        Points *
+                                    </label>
+                                    <input
+                                        type="number"
+                                        name="points"
+                                        value={editFormData.points}
+                                        onChange={handleEditInputChange}
+                                        required
+                                        min="0"
+                                        className="w-full px-4 py-3 bg-black border-2 border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-500 transition-colors"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm text-gray-400 mb-2">
+                                    Description *
+                                </label>
+                                <textarea
+                                    name="description"
+                                    value={editFormData.description}
+                                    onChange={handleEditInputChange}
+                                    required
+                                    rows={4}
+                                    className="w-full px-4 py-3 bg-black border-2 border-gray-700 rounded-lg text-white focus:outline-none focus:border-yellow-500 transition-colors resize-none"
+                                />
+                            </div>
+
+                            <div className="bg-yellow-500/10 border-2 border-yellow-500/30 rounded-lg p-4">
+                                <label className="block text-sm text-yellow-400 mb-2 font-semibold">
+                                    🔗 Resource Link
+                                </label>
+                                <input
+                                    type="url"
+                                    name="resource_link"
+                                    value={editFormData.resource_link}
+                                    onChange={handleEditInputChange}
+                                    placeholder="https://instance-link.com/..."
+                                    className="w-full px-4 py-3 bg-black border-2 border-yellow-700 rounded-lg text-white focus:outline-none focus:border-yellow-500 transition-colors placeholder:text-gray-600"
+                                />
+                                <p className="text-xs text-gray-400 mt-2">
+                                    💡 Update expiring instance links here
+                                </p>
+                            </div>
+
+                            <div>
+                                <label className="block text-sm text-gray-400 mb-2">
+                                    Flag (Secret Answer) *
+                                </label>
+                                <input
+                                    type="text"
+                                    name="flag"
+                                    value={editFormData.flag}
+                                    onChange={handleEditInputChange}
+                                    required
+                                    className="w-full px-4 py-3 bg-black border-2 border-gray-700 rounded-lg text-white font-mono focus:outline-none focus:border-yellow-500 transition-colors"
+                                />
+                            </div>
+
+                            <div className="flex gap-4 pt-4">
+                                <button
+                                    type="button"
+                                    onClick={handleCloseEditModal}
+                                    className="flex-1 py-3 bg-gray-800 hover:bg-gray-700 text-white font-bold rounded-lg transition-all duration-300"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={isUpdating}
+                                    className="flex-1 py-3 bg-gradient-to-r from-yellow-500 to-yellow-600 hover:from-yellow-400 hover:to-yellow-500 disabled:from-gray-700 disabled:to-gray-800 text-black font-bold rounded-lg transition-all duration-300 disabled:text-gray-400 disabled:cursor-not-allowed"
+                                >
+                                    {isUpdating ? "⏳ Updating..." : "✅ Save Changes"}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
