@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { X, Flag, Download } from "lucide-react";
+import { X, Flag, FileSymlink } from "lucide-react";
 import { supabase } from "../supabaseClient";
 
 const ChallengeModal = ({ isOpen, onClose, challenge, onSolve }) => {
@@ -133,8 +133,8 @@ const ChallengeModal = ({ isOpen, onClose, challenge, onSolve }) => {
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-sm text-gray-300 hover:text-yellow-400 transition-colors cursor-pointer group"
                 >
-                  <Download size={14} className="group-hover:animate-bounce" />
-                  <span className="underline">Download Challenge Files</span>
+                  <FileSymlink size={14} className="group-hover:animate-bounce" />
+                  <span className="underline">Challenge Files</span>
                 </a>
               </li>
             </ul>

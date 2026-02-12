@@ -9,7 +9,7 @@ import {
   Crown,
   LogOut,
 } from "lucide-react";
-import logo from "../assets/logo1.jpg";
+import logo from "../assets/image.png";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { supabase } from "../supabaseClient";

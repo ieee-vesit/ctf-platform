@@ -130,7 +130,7 @@ const ParticipantDashboard = () => {
       {/* AVAILABLE TASKS */}
       <div className="relative z-10 mb-6 flex items-center gap-2 text-yellow-400 font-semibold">
         <Shield size={18} />
-        AVAILABLE TASKS
+        AVAILABLE CHALLENGES
       </div>
 
       {/* CHALLENGE CARDS GROUPED BY CATEGORY */}

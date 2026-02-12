@@ -21,7 +21,7 @@ const ChallengeCard = ({ category, points, title, description, onClick }) => {
         {description || "No description available"}
       </p>
 
-      <div className="mb-6">
+      {/* <div className="mb-6">
         <div className="flex justify-between text-xs mb-1">
           <span className="text-gray-400">SUCCESS RATE</span>
           <span className="text-yellow-400">{rate.toFixed(0)}%</span>
@@ -32,7 +32,7 @@ const ChallengeCard = ({ category, points, title, description, onClick }) => {
             style={{ width: `${rate}%` }}
           />
         </div>
-      </div>
+      </div> */}
 
       <button className="w-full bg-white text-black py-2 rounded-lg font-semibold flex items-center justify-center gap-2 hover:bg-yellow-400 transition-colors">
         <Play size={16} />

@@ -148,7 +148,7 @@ const AuthPage = () => {
   };
 
   return (
-    <div className="min-h-screen w-full flex items-center justify-center bg-black relative overflow-hidden p-4">
+    <div className="max-h-screen w-full flex items-center justify-center bg-black relative overflow-hidden p-4">
       <div className="absolute inset-0 overflow-hidden">
         <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-yellow-400/10 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-yellow-400/5 rounded-full blur-3xl animate-pulse delay-1000" />
@@ -169,21 +169,21 @@ const AuthPage = () => {
             <div className="relative">
               <div className="absolute inset-0 bg-yellow-400/20 blur-xl rounded-full animate-pulse" />
               <div className="relative flex items-center gap-3 bg-zinc-900/50 px-5 py-3 rounded-full border border-yellow-400/30">
-                <ShieldCheckIcon />
+                {/* <ShieldCheckIcon /> */}
                 <span className="text-yellow-400 font-bold text-lg tracking-wider">
-                  IEEE CTF
+                  IEEE VESIT's Capture The Flag
                 </span>
               </div>
             </div>
 
-            <h2 className="text-3xl font-bold text-white mt-8 tracking-tight">
-              {isLogin ? "Welcome Back" : "Join the Challenge"}
-            </h2>
-            <p className="text-gray-400 text-sm mt-2 font-medium">
+            {/* <h2 className="text-3xl font-bold text-white mt-8 tracking-tight">
+              {isLogin ? "Join the Challenge" : "Join the Challenge"}
+            </h2> */}
+            {/* <p className="text-gray-400 text-sm mt-2 font-medium">
               {isLogin
                 ? "Sign in to access your dashboard"
                 : "Create your team and start competing"}
-            </p>
+            </p> */}
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
