@@ -26,20 +26,92 @@ const Logs = () => {
   useEffect(() => {
     fetchLogs();
     fetchCategories();
+
+    // Set up real-time subscription for live updates
+    const logsSubscription = supabase
+      .channel('logs-changes')
+      .on('postgres_changes', {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'submission_logs'
+      }, (payload) => {
+        console.log('New submission log:', payload);
+        fetchLogs(); // Refresh when new submissions come in
+      })
+      .subscribe();
+
+    // Polling fallback (every 30 seconds) for robustness
+    const pollingInterval = setInterval(() => {
+      fetchLogs();
+    }, 30000);
+
+    return () => {
+      logsSubscription.unsubscribe();
+      clearInterval(pollingInterval);
+    };
   }, []);
 
   const fetchLogs = async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("submission_logs_detailed")
+      // Fetch from submission_logs table with join to get challenge details
+      const { data: logsData, error: logsError } = await supabase
+        .from("submission_logs")
         .select("*")
         .order("submitted_at", { ascending: false })
         .limit(500); // Limit to recent 500 submissions
 
-      if (error) throw error;
+      if (logsError) throw logsError;
 
-      setLogsData(data || []);
+      if (logsData && logsData.length > 0) {
+        // Get unique challenge IDs to fetch their titles and categories
+        const challengeIds = [...new Set(logsData.map(log => log.challenge_id).filter(Boolean))];
+        
+        const { data: challengesData, error: challengesError } = await supabase
+          .from("challenges")
+          .select("id, title, category")
+          .in("id", challengeIds);
+
+        if (challengesError) throw challengesError;
+
+        // Create a map of challenge details
+        const challengeMap = (challengesData || []).reduce((acc, challenge) => {
+          acc[challenge.id] = challenge;
+          return acc;
+        }, {});
+
+        // Get unique user IDs to fetch team names
+        const userIds = [...new Set(logsData.map(log => log.user_id).filter(Boolean))];
+        
+        const { data: usersData, error: usersError } = await supabase
+          .from("users")
+          .select("id, team_name")
+          .in("id", userIds);
+
+        if (usersError) throw usersError;
+
+        // Create a map of user details
+        const userMap = (usersData || []).reduce((acc, user) => {
+          acc[user.id] = user;
+          return acc;
+        }, {});
+
+        // Combine the data with challenge and user details
+        const enrichedLogs = logsData.map(log => {
+          const challenge = challengeMap[log.challenge_id] || {};
+          const user = userMap[log.user_id] || {};
+          return {
+            ...log,
+            challenge_title: challenge.title || "Unknown Challenge",
+            challenge_category: challenge.category || "Unknown Category",
+            team_name: user.team_name || "Unknown Team"
+          };
+        });
+
+        setLogsData(enrichedLogs);
+      } else {
+        setLogsData([]);
+      }
     } catch (error) {
       console.error("Error fetching logs:", error);
     } finally {

@@ -34,20 +34,52 @@ const Leaderboard = () => {
 
   useEffect(() => {
     fetchLeaderboard();
+    
+    // Set up real-time subscription for live updates
+    const leaderboardSubscription = supabase
+      .channel('leaderboard-changes')
+      .on('postgres_changes', {
+        event: '*',
+        schema: 'public',
+        table: 'users'
+      }, (payload) => {
+        console.log('User data changed:', payload);
+        fetchLeaderboard(); // Refresh when any user data changes
+      })
+      .subscribe();
+
+    // Polling fallback (every 30 seconds) for robustness
+    const pollingInterval = setInterval(() => {
+      fetchLeaderboard();
+    }, 30000);
+
+    return () => {
+      leaderboardSubscription.unsubscribe();
+      clearInterval(pollingInterval);
+    };
   }, []);
 
   const fetchLeaderboard = async () => {
     try {
       setLoading(true);
+      // Fetch from users table and sort by score to calculate rankings
       const { data, error } = await supabase
-        .from("leaderboard")
-        .select("*")
-        .order("rank", { ascending: true });
+        .from("users")
+        .select("id, team_name, is_admin, score, created_at")
+        .order("score", { ascending: false });
 
       if (error) throw error;
 
-      setLeaderboardData(data || []);
-      setTotalTeams(data?.length || 0);
+      // Calculate ranks based on score
+      const rankedData = (data || []).map((user, index) => ({
+        ...user,
+        rank: index + 1,
+        challenges_solved: 0, // Will be fetched separately if needed
+        total_challenges: 0   // Will be fetched separately if needed
+      }));
+
+      setLeaderboardData(rankedData);
+      setTotalTeams(rankedData.length);
     } catch (error) {
       console.error("Error fetching leaderboard:", error);
     } finally {
