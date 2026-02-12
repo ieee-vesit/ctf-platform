@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { X, Flag, FileSymlink } from "lucide-react";
 import { supabase } from "../supabaseClient";
 
@@ -6,6 +6,21 @@ const ChallengeModal = ({ isOpen, onClose, challenge, onSolve }) => {
   const [flagInput, setFlagInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
+
+  // Clear message when challenge changes (user switches to different challenge)
+  useEffect(() => {
+    setMessage({ type: "", text: "" });
+  }, [challenge?.id]);
+
+  // Clear message automatically after 5 seconds
+  useEffect(() => {
+    if (message.text) {
+      const timer = setTimeout(() => {
+        setMessage({ type: "", text: "" });
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [message.text]);
 
   if (!isOpen || !challenge) return null;
 
@@ -26,21 +41,7 @@ const ChallengeModal = ({ isOpen, onClose, challenge, onSolve }) => {
         return;
       }
 
-      const isCorrect = flagInput.trim() === challenge.flag.trim();
-
-      await supabase.from("submission_logs").insert({
-        user_id: user.id,
-        challenge_id: challenge.id,
-        submitted_flag: flagInput.trim(),
-        is_correct: isCorrect,
-      });
-
-      if (!isCorrect) {
-        setMessage({ type: "error", text: "❌ Incorrect flag. Try again!" });
-        setSubmitting(false);
-        return;
-      }
-
+      // Check if user has already solved this challenge BEFORE any submission
       const { data: existing } = await supabase
         .from("user_challenges")
         .select("*")
@@ -57,6 +58,22 @@ const ChallengeModal = ({ isOpen, onClose, challenge, onSolve }) => {
         return;
       }
 
+      const isCorrect = flagInput.trim() === challenge.flag.trim();
+
+      await supabase.from("submission_logs").insert({
+        user_id: user.id,
+        challenge_id: challenge.id,
+        submitted_flag: flagInput.trim(),
+        is_correct: isCorrect,
+      });
+
+      if (!isCorrect) {
+        setMessage({ type: "error", text: "❌ Incorrect flag. Try again!" });
+        setSubmitting(false);
+        return;
+      }
+
+      // Only update user_challenges - the database trigger will handle score update
       const { error } = await supabase.from("user_challenges").upsert({
         user_id: user.id,
         challenge_id: challenge.id,
@@ -66,28 +83,6 @@ const ChallengeModal = ({ isOpen, onClose, challenge, onSolve }) => {
       });
 
       if (error) throw error;
-
-      // Also update the user's score directly (frontend fallback + immediate feedback)
-      const { error: scoreError } = await supabase.rpc("increment_user_score", {
-        user_id_input: user.id,
-        points_input: challenge.points,
-      });
-
-      // If RPC doesn't exist, try direct update
-      if (scoreError) {
-        const { data: currentUser } = await supabase
-          .from("users")
-          .select("score")
-          .eq("id", user.id)
-          .single();
-
-        if (currentUser) {
-          await supabase
-            .from("users")
-            .update({ score: currentUser.score + challenge.points })
-            .eq("id", user.id);
-        }
-      }
 
       setMessage({
         type: "success",
