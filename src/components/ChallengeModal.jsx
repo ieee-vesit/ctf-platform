@@ -67,6 +67,28 @@ const ChallengeModal = ({ isOpen, onClose, challenge, onSolve }) => {
 
       if (error) throw error;
 
+      // Also update the user's score directly (frontend fallback + immediate feedback)
+      const { error: scoreError } = await supabase.rpc("increment_user_score", {
+        user_id_input: user.id,
+        points_input: challenge.points,
+      });
+
+      // If RPC doesn't exist, try direct update
+      if (scoreError) {
+        const { data: currentUser } = await supabase
+          .from("users")
+          .select("score")
+          .eq("id", user.id)
+          .single();
+
+        if (currentUser) {
+          await supabase
+            .from("users")
+            .update({ score: currentUser.score + challenge.points })
+            .eq("id", user.id);
+        }
+      }
+
       setMessage({
         type: "success",
         text: `🎉 Correct! +${challenge.points} points!`,

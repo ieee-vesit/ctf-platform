@@ -52,3 +52,24 @@ CREATE TABLE public.users (
   CONSTRAINT users_pkey PRIMARY KEY (id),
   CONSTRAINT users_id_fkey FOREIGN KEY (id) REFERENCES auth.users(id)
 );
+
+-- Trigger function to automatically update user score when a challenge is solved
+CREATE OR REPLACE FUNCTION update_user_score()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.solved = true AND (OLD IS NULL OR OLD.solved = false) THEN
+    UPDATE public.users
+    SET score = score + NEW.points
+    WHERE id = NEW.user_id;
+  END IF;
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Trigger to fire on INSERT or UPDATE of solved status in user_challenges
+DROP TRIGGER IF EXISTS trigger_update_user_score ON public.user_challenges;
+CREATE TRIGGER trigger_update_user_score
+  AFTER INSERT OR UPDATE OF solved, user_id, points
+  ON public.user_challenges
+  FOR EACH ROW
+  EXECUTE FUNCTION update_user_score();
