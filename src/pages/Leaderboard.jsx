@@ -62,6 +62,24 @@ const Leaderboard = () => {
   const fetchLeaderboard = async () => {
     try {
       setLoading(true);
+      
+      // Fetch total challenges count
+      const { count: totalChallenges } = await supabase
+        .from("challenges")
+        .select("id", { count: 'exact', head: true });
+      
+      // Fetch solved challenges per user
+      const { data: solvedData } = await supabase
+        .from("user_challenges")
+        .select("user_id, solved")
+        .eq("solved", true);
+      
+      // Create a map of user_id -> solved count
+      const solvedMap = {};
+      (solvedData || []).forEach(({ user_id }) => {
+        solvedMap[user_id] = (solvedMap[user_id] || 0) + 1;
+      });
+      
       // Fetch from users table and sort by score to calculate rankings
       const { data, error } = await supabase
         .from("users")
@@ -74,8 +92,8 @@ const Leaderboard = () => {
       const rankedData = (data || []).map((user, index) => ({
         ...user,
         rank: index + 1,
-        challenges_solved: 0, // Will be fetched separately if needed
-        total_challenges: 0   // Will be fetched separately if needed
+        challenges_solved: solvedMap[user.id] || 0,
+        total_challenges: totalChallenges || 0
       }));
 
       setLeaderboardData(rankedData);
