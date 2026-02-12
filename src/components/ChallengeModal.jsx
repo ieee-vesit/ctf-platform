@@ -1,11 +1,42 @@
 import { useState, useEffect } from "react";
-import { X, Flag, FileSymlink } from "lucide-react";
+import { X, Flag, FileSymlink, Loader2 } from "lucide-react";
 import { supabase } from "../supabaseClient";
 
 const ChallengeModal = ({ isOpen, onClose, challenge, onSolve }) => {
   const [flagInput, setFlagInput] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
+  const [modalLoading, setModalLoading] = useState(false);
+  const [currentChallenge, setCurrentChallenge] = useState(null);
+
+  // Fetch fresh challenge data when modal opens
+  useEffect(() => {
+    const fetchChallenge = async () => {
+      if (!isOpen || !challenge?.id) return;
+      
+      setModalLoading(true);
+      try {
+        const { data, error } = await supabase
+          .from("challenges")
+          .select("*")
+          .eq("id", challenge.id)
+          .single();
+
+        if (error) throw error;
+        setCurrentChallenge(data);
+      } catch (error) {
+        console.error("Error fetching challenge:", error);
+        setCurrentChallenge(challenge); // Fallback to passed challenge
+      } finally {
+        setModalLoading(false);
+      }
+    };
+
+    fetchChallenge();
+  }, [isOpen, challenge?.id]);
+
+  // Use fetched challenge data, fall back to passed challenge
+  const displayChallenge = currentChallenge || challenge;
 
   // Clear message when challenge changes (user switches to different challenge)
   useEffect(() => {
@@ -22,7 +53,17 @@ const ChallengeModal = ({ isOpen, onClose, challenge, onSolve }) => {
     }
   }, [message.text]);
 
-  if (!isOpen || !challenge) return null;
+  if (!isOpen || !displayChallenge) {
+    return (
+      <div
+        className={`fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4 ${!isOpen ? "hidden" : ""}`}
+      >
+        <div className="flex items-center justify-center">
+          <Loader2 className="animate-spin text-yellow-400" size={48} />
+        </div>
+      </div>
+    );
+  }
 
   const handleSubmitFlag = async (e) => {
     e.preventDefault();
@@ -46,7 +87,7 @@ const ChallengeModal = ({ isOpen, onClose, challenge, onSolve }) => {
         .from("user_challenges")
         .select("*")
         .eq("user_id", user.id)
-        .eq("challenge_id", challenge.id)
+        .eq("challenge_id", displayChallenge.id)
         .single();
 
       if (existing?.solved) {
@@ -58,11 +99,11 @@ const ChallengeModal = ({ isOpen, onClose, challenge, onSolve }) => {
         return;
       }
 
-      const isCorrect = flagInput.trim() === challenge.flag.trim();
+      const isCorrect = flagInput.trim() === displayChallenge.flag.trim();
 
       await supabase.from("submission_logs").insert({
         user_id: user.id,
-        challenge_id: challenge.id,
+        challenge_id: displayChallenge.id,
         submitted_flag: flagInput.trim(),
         is_correct: isCorrect,
       });
@@ -76,9 +117,9 @@ const ChallengeModal = ({ isOpen, onClose, challenge, onSolve }) => {
       // Only update user_challenges - the database trigger will handle score update
       const { error } = await supabase.from("user_challenges").upsert({
         user_id: user.id,
-        challenge_id: challenge.id,
+        challenge_id: displayChallenge.id,
         solved: true,
-        points: challenge.points,
+        points: displayChallenge.points,
         solved_at: new Date().toISOString(),
       });
 
@@ -86,7 +127,7 @@ const ChallengeModal = ({ isOpen, onClose, challenge, onSolve }) => {
 
       setMessage({
         type: "success",
-        text: `🎉 Correct! +${challenge.points} points!`,
+        text: `🎉 Correct! +${displayChallenge.points} points!`,
       });
       setFlagInput("");
 
@@ -119,13 +160,13 @@ const ChallengeModal = ({ isOpen, onClose, challenge, onSolve }) => {
           <div>
             <div className="flex items-center gap-2 mb-2">
               <span className="text-[11px] text-yellow-400 border px-2 py-1 rounded">
-                {challenge.category}
+                {displayChallenge.category}
               </span>
               <span className="text-[11px] text-gray-400 border px-2 py-1 rounded">
-                {challenge.points} pts
+                {displayChallenge.points} pts
               </span>
             </div>
-            <h2 className="text-2xl font-bold">{challenge.title}</h2>
+            <h2 className="text-2xl font-bold">{displayChallenge.title}</h2>
           </div>
           <button
             onClick={onClose}
@@ -136,16 +177,16 @@ const ChallengeModal = ({ isOpen, onClose, challenge, onSolve }) => {
         </div>
 
         <p className="text-sm text-gray-400 mb-6 leading-relaxed">
-          {challenge.description || "No description available"}
+          {displayChallenge.description || "No description available"}
         </p>
 
-        {challenge.resource_link && (
+        {displayChallenge.resource_link && (
           <div className="border border-yellow-500/30 rounded-lg p-4 mb-6">
             <p className="text-xs text-yellow-400 mb-3 font-semibold">RESOURCES</p>
             <ul className="space-y-2">
               <li>
                 <a
-                  href={challenge.resource_link}
+                  href={displayChallenge.resource_link}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-sm text-gray-300 hover:text-yellow-400 transition-colors cursor-pointer group"
@@ -162,7 +203,7 @@ const ChallengeModal = ({ isOpen, onClose, challenge, onSolve }) => {
           <span>
             📅 CREATED: 
             <span className="text-gray-300">
-              {new Date(challenge.created_at).toLocaleDateString()}
+              {new Date(displayChallenge.created_at).toLocaleDateString()}
             </span>
           </span>
         </div>
@@ -209,7 +250,7 @@ const ChallengeModal = ({ isOpen, onClose, challenge, onSolve }) => {
 
         <div className="flex justify-between text-[10px] text-gray-500 mt-6">
           <div>SECURE CONNECTION ACTIVE</div>
-          <div>CHAL_ID: {challenge.id.slice(0, 8)}</div>
+          <div>CHAL_ID: {displayChallenge.id.slice(0, 8)}</div>
         </div>
       </div>
     </div>

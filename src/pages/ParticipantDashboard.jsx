@@ -14,6 +14,7 @@ const ParticipantDashboard = () => {
     totalScore: 0,
     solvedCount: 0,
   });
+  const [solvedChallengeIds, setSolvedChallengeIds] = useState(new Set());
 
   useEffect(() => {
     fetchChallenges();
@@ -62,10 +63,10 @@ const ParticipantDashboard = () => {
         return;
       }
 
-      // Fetch count of solved challenges
+      // Fetch solved challenges with their IDs
       const { data: solvedChallenges, error: solvedError } = await supabase
         .from("user_challenges")
-        .select("id")
+        .select("challenge_id")
         .eq("user_id", user.id)
         .eq("solved", true);
 
@@ -75,8 +76,15 @@ const ParticipantDashboard = () => {
           totalScore: userData?.score || 0,
           solvedCount: 0,
         });
+        setSolvedChallengeIds(new Set());
         return;
       }
+
+      // Create a Set of solved challenge IDs for efficient lookup
+      const solvedIds = new Set(
+        solvedChallenges?.map((item) => item.challenge_id) || []
+      );
+      setSolvedChallengeIds(solvedIds);
 
       setUserStats({
         totalScore: userData?.score || 0,
@@ -85,6 +93,7 @@ const ParticipantDashboard = () => {
     } catch (error) {
       console.error("Error fetching user stats:", error);
       setUserStats({ totalScore: 0, solvedCount: 0 });
+      setSolvedChallengeIds(new Set());
     }
   };
 
@@ -168,6 +177,7 @@ const ParticipantDashboard = () => {
                       title={challenge.title}
                       description={challenge.description}
                       onClick={() => handleOpenModal(challenge)}
+                      isSolved={solvedChallengeIds.has(challenge.id)}
                     />
                   ))}
                 </div>
