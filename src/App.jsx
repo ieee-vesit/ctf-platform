@@ -14,13 +14,13 @@ function App() {
   return (
     <div className="text-yellow-400">
       <Routes>
-        <Route path="/" element={<Layout />}>
+        <Route path="/no26" element={<Layout />}>
           <Route index element={<Home />} />
-          <Route path="auth" element={<AuthPage />} />
-          <Route path="dashboard" element={<ParticipantDashboard />} />
-          <Route path="/leaderboard" element={<Leaderboard />} />
-          <Route path="/logs" element={<Logs />} />
-          <Route path="/Form" element={<Form />} />
+          <Route path="authno26" element={<AuthPage />} />
+          <Route path="dashboardno26" element={<ParticipantDashboard />} />
+          <Route path="/leaderboardno26" element={<Leaderboard />} />
+          <Route path="/logsno26" element={<Logs />} />
+          <Route path="/Formno26" element={<Form />} />
         </Route>
       </Routes>
     </div>
