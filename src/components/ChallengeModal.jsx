@@ -216,7 +216,7 @@ const ChallengeModal = ({ isOpen, onClose, challenge, onSolve }) => {
                 <Flag size={14} className="text-yellow-400" />
                 <input
                   type="text"
-                  placeholder="ROOT{your_flag_here}"
+                  placeholder="CTF{yourflaghere}"
                   value={flagInput}
                   onChange={(e) => setFlagInput(e.target.value)}
                   disabled={submitting}

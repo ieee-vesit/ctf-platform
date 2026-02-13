@@ -322,7 +322,7 @@ const Form = () => {
                                 name="flag"
                                 value={formData.flag}
                                 onChange={handleInputChange}
-                                placeholder="ROOT{your_secret_flag}"
+                                placeholder="CTF{yourflaghere}"
                                 required
                                 className="w-full px-4 py-3 bg-black border-2 border-gray-700 rounded-lg text-white font-mono focus:outline-none focus:border-yellow-500 transition-colors placeholder:text-gray-600"
                             />
