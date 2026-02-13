@@ -104,7 +104,10 @@ const Form = () => {
                 },
             ]).select();
 
-            if (error) throw error;
+            if (error) {
+                console.error("Insert error:", error);
+                throw error;
+            }
 
             setChallenges((prev) => [data[0], ...prev]);
             setFormData({
@@ -117,7 +120,8 @@ const Form = () => {
             });
             setMessage({ type: "success", text: "Challenge added successfully!" });
         } catch (error) {
-            setMessage({ type: "error", text: "Failed to add challenge" });
+            console.error("Add challenge error:", error);
+            setMessage({ type: "error", text: "Failed to add challenge. Check RLS policies." });
         } finally {
             setIsSubmitting(false);
         }
@@ -134,10 +138,15 @@ const Form = () => {
                 .delete()
                 .eq("id", id);
 
-            if (error) throw error;
+            if (error) {
+                console.error("Delete error:", error);
+                throw error;
+            }
+            
             setChallenges((prev) => prev.filter((c) => c.id !== id));
         } catch (error) {
-            setMessage({ type: "error", text: "Failed to delete challenge" });
+            console.error("Delete challenge error:", error);
+            setMessage({ type: "error", text: "Failed to delete challenge. Make sure RLS policies allow delete on the challenges table." });
         }
     };
 
@@ -190,7 +199,10 @@ const Form = () => {
                 .eq("id", editingChallenge.id)
                 .select();
 
-            if (error) throw error;
+            if (error) {
+                console.error("Update error:", error);
+                throw error;
+            }
 
             setChallenges((prev) =>
                 prev.map((c) => (c.id === editingChallenge.id ? data[0] : c))
@@ -199,7 +211,8 @@ const Form = () => {
             setMessage({ type: "success", text: "Challenge updated successfully!" });
             handleCloseEditModal();
         } catch (error) {
-            setMessage({ type: "error", text: "Failed to update challenge" });
+            console.error("Update challenge error:", error);
+            setMessage({ type: "error", text: "Failed to update challenge. Check RLS policies." });
         } finally {
             setIsUpdating(false);
         }
